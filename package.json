@@ -1,0 +1,22 @@
+{
+  "name": "botik",
+  "version": "1.0.0",
+  "description": "Prost botik",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "alowave",
+  "license": "ISC",
+  "dependencies": {
+    "@types/sqlite3": "^3.1.11",
+    "dotenv": "^16.4.7",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "telegraf": "^4.16.3",
+    "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2"
+  }
+}

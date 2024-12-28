@@ -1,0 +1,18 @@
+import 'dotenv/config'
+import Bot from "./client";
+import sqlite3 from "sqlite3";
+import { GetMaterials } from "./commands/getMaterials";
+
+const bot = new Bot({
+  token: process.env.TOKEN!,
+  databaseFile: "main.db",
+  databaseDriver: sqlite3.Database,
+});
+
+bot.registerCommands([new GetMaterials(bot)]);
+bot.run();
+
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
+
+export default bot;
