@@ -1,6 +1,6 @@
-import type { Update } from "@telegraf/types";
+import type { CallbackQuery, Update } from "@telegraf/types";
 import type { Command } from "./commands/baseCommand";
-import { type Context, Telegraf } from "telegraf";
+import { Context, Telegraf } from "telegraf";
 import { Database } from "sqlite";
 import { existsSync } from "fs";
 
@@ -28,6 +28,8 @@ export default class Bot {
       filename: this.databaseFile,
       driver: this.databaseDriver,
     });
+
+    this.registerButtonHandlers();
   }
 
   public async run() {
@@ -69,13 +71,19 @@ export default class Bot {
 
     console.log(`Registered ${this.commands.length} commands.`);
   }
-  
+
+  public registerStartCommand(command: Command): void {
+    this.botInstance.start((context: Context) => command.handle(context));
+
+    console.log(`Registered start command.`);
+  }
+
   public async stop(reason?: string) {
     console.log("Stopping the application...");
-    
+
     this.botInstance.stop(reason);
     await this.databaseInstance.close();
-    
+
     console.log("GoodBye!");
   }
 
@@ -91,5 +99,18 @@ export default class Bot {
     `);
 
     console.log("Succesfully initiated tables.");
+  }
+
+  private registerButtonHandlers(): void {
+    this.botInstance.action(/button_/, (ctx) => {
+      if ('data' in ctx.callbackQuery) {
+        const buttonId = ctx.callbackQuery.data;
+        ctx.answerCbQuery();
+
+        
+      } else {
+        ctx.reply('Unsupported type of callbackQuery.')
+      }
+    });
   }
 }
