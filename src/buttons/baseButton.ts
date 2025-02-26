@@ -1,7 +1,7 @@
 import { type Context } from "telegraf";
 
-export interface BaseButton {
-  buttonId: string;
+export abstract class BaseButton {
+  abstract buttonId: string;
 
-  handle(context: Context): Promise<void>;
+  abstract handle(context: Context): Promise<void>;
 }

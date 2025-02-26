@@ -1,18 +1,20 @@
-import type { CallbackQuery, Update } from "@telegraf/types";
-import type { Command } from "./commands/baseCommand";
+import type { Update } from "@telegraf/types";
 import { Context, Telegraf } from "telegraf";
 import { Database } from "sqlite";
 import { existsSync } from "fs";
+import { BaseButton } from "./buttons/baseButton";
+import loadButtons from "./utils/loadButtons";
 
 export default class Bot {
   private firstLaunch: boolean = false;
-  private commands: Command[] = [];
   private databaseDriver: any;
   private databaseFile: string;
+  private buttonsHandlers: Map<string, BaseButton> = new Map();
 
   public botToken: string;
   public botInstance: Telegraf<Context<Update>>;
   public databaseInstance: Database;
+  public activeMenus: Map<number, number> = new Map();
 
   constructor(options: {
     token: string;
@@ -58,18 +60,14 @@ export default class Bot {
 
       await this.prepareDbTables();
     }
-  }
 
-  public registerCommands(commands: Command[]): void {
-    this.commands = commands;
+    console.log("Getting all buttons handlers.");
 
-    this.commands.forEach((value) => {
-      this.botInstance.command(value.commandName, (context: Context) =>
-        value.handle(context)
-      );
-    });
+    await loadButtons(this.buttonsHandlers);
 
-    console.log(`Registered ${this.commands.length} commands.`);
+    console.log(
+      "Succesfully added " + this.buttonsHandlers.size + " handlers."
+    );
   }
 
   public registerStartCommand(command: Command): void {
@@ -102,15 +100,47 @@ export default class Bot {
   }
 
   private registerButtonHandlers(): void {
-    this.botInstance.action(/button_/, (ctx) => {
-      if ('data' in ctx.callbackQuery) {
-        const buttonId = ctx.callbackQuery.data;
-        ctx.answerCbQuery();
+    this.botInstance.action(/button_/, async (ctx) => {
+      let deleteMessage = undefined;
+      
+      if ("data" in ctx.callbackQuery) {
+        const [buttonId, menuId] = ctx.callbackQuery.data.split(":");
+        const activeMenu = this.activeMenus.get(ctx.chat!.id);
 
+        if (!activeMenu || activeMenu !== +menuId)
+          this.commands.find(
+
+        const button = this.buttonsHandlers.get(buttonId);
         
+        if (button) {
+          try {
+            await button.handle(ctx);
+          } catch (error) {
+            console.error("Error handling button action: ", error);
+            deleteMessage = await ctx.reply(
+              "An error occurred. Please try again."
+            );
+          }
+        } else {
+          deleteMessage = await ctx.reply(
+            "Oops! Something went really, really wrong!"
+          );
+        }
       } else {
-        ctx.reply('Unsupported type of callbackQuery.')
+        deleteMessage = await ctx.reply("Unsupported type of callbackQuery.");
       }
+      
+      if (deleteMessage)
+        setTimeout(
+          async () =>
+            await this.botInstance.telegram.deleteMessage(
+              deleteMessage.chat.id,
+              deleteMessage.message_id
+            ),
+            10000
+        );
+
+      ctx.answerCbQuery();
     });
   }
 }
